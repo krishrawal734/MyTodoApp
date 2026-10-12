@@ -1,98 +1,83 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useState } from 'react';
+import { View, ScrollView, ActivityIndicator } from 'react-native';
+import type { Todo } from '../types/todo';
+import { useTodos } from '../hooks/useTodos';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
+import TodoHeader from '../components/todo/TodoHeader';
+import TodoStats from '../components/todo/TodoStats';
+import TodoForm from '../components/todo/TodoForm';
+import TodoFilters from '../components/todo/TodoFilters';
+import TodoSearch from '../components/todo/TodoSearch';
+import TodoList from '../components/todo/TodoList';
+import TodoFooter from '../components/todo/TodoFooter';
+import TodoEditModal from '../components/todo/TodoEditModal';
+
+export default function Index() {
+  const todoState = useTodos();
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+
+  if (!todoState.isLoaded) {  
     return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+      <View className="flex-1 items-center justify-center bg-[#030617]">
+        <ActivityIndicator size="large" color="#A855F7" />
+      </View> 
     );
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View className="flex-1 bg-[#030617]">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingTop: 64,
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="w-full max-w-3xl self-center">
+          <TodoHeader />
+
+          <TodoStats
+            total={todoState.total}
+            pending={todoState.pending}
+            completed={todoState.completed}
+          />
+
+          <View className="mt-6 rounded-2xl border border-[#292D3D] bg-[#101322] p-4">
+            <TodoForm onAdd={todoState.addTodo} />
+    
+            <View className="mt-4">
+              <TodoFilters
+                selected={todoState.filter}
+                onChange={todoState.setFilter}
+              />
+            </View>
+
+            <TodoSearch
+              value={todoState.search}
+              onChange={todoState.setSearch}
+            />
+
+            <TodoList
+              todos={todoState.filteredTodos}
+              hasTasks={todoState.todos.length > 0}
+              onToggle={todoState.toggleTodo}
+              onEdit={setEditingTodo}
+              onDelete={todoState.deleteTodo}
+            />
+          </View>
+
+          <TodoFooter />
+        </View>
+      </ScrollView>
+
+      <TodoEditModal
+        todo={editingTodo}
+        onClose={() => setEditingTodo(null)}
+        onSave={todoState.editTodo}
+      />
+    </View>
   );
 }
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});

@@ -9,16 +9,21 @@ export function useTodos() {
   const [search, setSearch] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load saved tasks once
+  // Load saved todos
   useEffect(() => {
     let active = true;
 
     async function load() {
       try {
-        const saved = await loadTodos();
-        if (active) setTodos(saved);
+        const savedTodos = await loadTodos();
+
+        if (active) {
+          setTodos(savedTodos);
+        }
       } finally {
-        if (active) setIsLoaded(true);
+        if (active) {
+          setIsLoaded(true);
+        }    
       }
     }
 
@@ -29,34 +34,33 @@ export function useTodos() {
     };
   }, []);
 
-  // Save tasks after initial loading
+  // Save todos after loading
   useEffect(() => {
-    if (!isLoaded) return;
-
-    saveTodos(todos).catch((error) => {
-      console.error('Could not save tasks:', error);
-    });
+    if (isLoaded) {
+      saveTodos(todos).catch(console.error);
+    }
   }, [todos, isLoaded]);
 
-  const addTodo = (title: string) => {
-    const trimmed = title.trim();
-    if (!trimmed) return;
+  // Add a todo
+  function addTodo(title: string) {
+    title = title.trim();
+    if (!title) return;
 
     const now = new Date().toISOString();
 
-    setTodos((previous) => [
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        title: trimmed,
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...previous,
-    ]);
-  };
+    const newTodo: Todo = {
+      id: `${Date.now()}-${Math.random()}`,
+      title,
+      completed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  const toggleTodo = (id: string) => {
+    setTodos((previous) => [newTodo, ...previous]);
+  }
+
+  // Complete or uncomplete a todo
+  function toggleTodo(id: string) {
     setTodos((previous) =>
       previous.map((todo) =>
         todo.id === id
@@ -68,47 +72,53 @@ export function useTodos() {
           : todo
       )
     );
-  };
+  }
 
-  const deleteTodo = (id: string) => {
+  // Delete a todo
+  function deleteTodo(id: string) {
     setTodos((previous) =>
       previous.filter((todo) => todo.id !== id)
     );
-  };
+  }
 
-  const editTodo = (id: string, title: string) => {
-    const trimmed = title.trim();
-    if (!trimmed) return;
+  // Edit a todo
+  function editTodo(id: string, title: string) {
+    title = title.trim();
+    if (!title) return;
 
     setTodos((previous) =>
       previous.map((todo) =>
         todo.id === id
           ? {
               ...todo,
-              title: trimmed,
+              title,
               updatedAt: new Date().toISOString(),
             }
           : todo
       )
     );
-  };
+  }
 
-  const filteredTodos = useMemo(
-    () =>
-      todos.filter((todo) => {
-        const matchesSearch = todo.title
-          .toLowerCase()
-          .includes(search.trim().toLowerCase());
+  // Search and filter todos
+  const filteredTodos = useMemo(() => {
+    return todos.filter((todo) => {
+      const matchesSearch = todo.title
+        .toLowerCase()
+        .includes(search.trim().toLowerCase());
 
-        const matchesFilter =
-          filter === 'All' ||
-          (filter === 'Pending' && !todo.completed) ||
-          (filter === 'Completed' && todo.completed);
+      const matchesFilter =
+        filter === 'All' ||
+        (filter === 'Pending' && !todo.completed) ||
+        (filter === 'Completed' && todo.completed);
 
-        return matchesSearch && matchesFilter;
-      }),
-    [todos, filter, search]
-  );
+      return matchesSearch && matchesFilter;
+    });
+  }, [todos, search, filter]);
+
+  // Count todos
+  const total = todos.length;
+  const pending = todos.filter((todo) => !todo.completed).length;
+  const completed = todos.filter((todo) => todo.completed).length;
 
   return {
     todos,
@@ -121,9 +131,9 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     editTodo,
-    total: todos.length,
-    pending: todos.filter((todo) => !todo.completed).length,
-    completed: todos.filter((todo) => todo.completed).length,
+    total,
+    pending,
+    completed,
     isLoaded,
   };
 }

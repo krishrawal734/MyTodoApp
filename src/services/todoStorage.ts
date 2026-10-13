@@ -20,6 +20,8 @@ export async function loadTodos(): Promise<Todo[]> {
   }
 }
 
+// SAVE TASKKS  
+
 export async function saveTodos(todos: Todo[]): Promise<void> {
   try {
     await AsyncStorage.setItem(

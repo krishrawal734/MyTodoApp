@@ -1,8 +1,10 @@
+// defines the data structure and allowed filter values
+
 
 export type Todo = {
   id: string;
   title: string;
-  completed: boolean;
+  completed: boolean;        
   createdAt: string;
   updatedAt: string;
 };
